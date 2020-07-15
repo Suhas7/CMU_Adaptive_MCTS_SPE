@@ -4,6 +4,7 @@ import random
 MCRTrials = 20
 MCRActs = 100
 
+UCBCParam = .1
 
 # Library of possible player commands
 comm0 = tsf.PlayerCommand()
@@ -31,6 +32,7 @@ class StateNode():
 		self.state = state
 		self.children=dict()
 		self.value=0
+		self.trials=0
 	def MCRollout(self):
 		rootState=self.state
 		p0 = tempGame.getPlayerByID(0)
@@ -43,9 +45,15 @@ class StateNode():
 				p1.command(random.choice(player_actions))
 				clock.tick()
 				self.value += tempGame.getState().score
-		self.value/=MCRTrials
-		#todo make this propogate to parent nodes
-	def expand(self):
+		self.trials+=MCRTrials
+		node = self
+		while node.parent != None:
+			node.parent.trials+=MCRTrials
+			node.parent.value+=node.value
+			node=node.parent
+
+	def expand(self,frontier):
+		frontier.remove(self)
 		tempGame.setState(self.state)
 		clock = tempGame.gameClock
 		human = tempGame.getPlayerByID(0)
@@ -61,6 +69,7 @@ class StateNode():
 				newNode=StateNode(tempGame.getState(),parent=self.state)
 				newNode.MCRollout()
 				self.children[(i,j)] = newNode
+				frontier.add(newNode)
 
 class GameTree():
 	def __init__(self):
@@ -73,7 +82,8 @@ class GameTree():
 		self.clock.tick()
 		# Mark root node and adjacency sets
 		self.root = self.getState()
-		self.root.expand()
+		self.frontier = set([self.root])
+		self.root.expand(self.frontier)
 		# Implement expansion selection
 	def tick(self):
 		self.clock.tick()
@@ -83,3 +93,10 @@ class GameTree():
 		return StateNode(self.game.getState(),self,None)
 	def processMove(moves):
 		self.root=self.root.children[moves]
+	def selectAndExpand(self):
+		def UCBEq(node):
+			w=node.value
+			s=node.trials
+			return w/(s+1)+UCBCParam*sqrt(ln(node.parent.trials)/s)
+		max(self.frontier,key=UCBEq).expand(self.frontier)
+
