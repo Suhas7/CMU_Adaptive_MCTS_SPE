@@ -4,6 +4,8 @@ import random
 MCRTrials = 20
 MCRActs = 100
 
+FRAME_CHUNK_SIZE=10
+
 UCBCParam = .1
 
 # Library of possible player commands
@@ -22,6 +24,15 @@ comm3.turn=directions[0], comm3.thrust=thrust[1], comm3.fire=fire[0]
 comm4.turn=directions[0], comm4.thrust=thrust[0], comm4.fire=fire[1]
 
 player_actions = set([comm0,comm1,comm2,comm3,comm4])
+
+# Library of fortress commands
+fortress_actions = set()
+for i in range(0,2):
+	for j in range(0,2):
+		fcomm = tsf.FortressCommand()
+		fcomm,targetID=i
+		fcomm.fireProb=j
+		fortress_actions.add(fcomm)
 
 self.builder = tsf.JsonGameBuilder("configs/sf_config_tick_clock.json")
 tempGame = builder.build()
@@ -58,18 +69,20 @@ class StateNode():
 		clock = tempGame.gameClock
 		human = tempGame.getPlayerByID(0)
 		agent = tempGame.getPlayerByID(1)
-		# self.fortress = game.getPlayerByID(3)
+		fortress = game.getFortressByID(0)
 		# @Dana, how can I call the policy here
 		for i in range(len(player_actions)):
 			for j in range(len(player_actions)):
-				tempGame.setState(self.state)
-				human.command(player_actions[i])
-				agent.command(player_actions[j])
-				clock.tick()
-				newNode=StateNode(tempGame.getState(),parent=self.state)
-				newNode.MCRollout()
-				self.children[(i,j)] = newNode
-				frontier.add(newNode)
+				for k in range(len(fortress_actions)):
+					tempGame.setState(self.state)
+					human.command(player_actions[i])
+					agent.command(player_actions[j])
+					fortress.command(fortress_actions[k])
+					[clock.tick() for _ in range(FRAME_CHUNK_SIZE)]
+					newNode=StateNode(tempGame.getState(),parent=self.state)
+					newNode.MCRollout()
+					self.children[(i,j,k)] = newNode
+					frontier.add(newNode)
 
 class GameTree():
 	def __init__(self):
@@ -78,7 +91,7 @@ class GameTree():
 		self.clock = game.gameClock
 		self.human = game.getPlayerByID(0)
 		self.agent = game.getPlayerByID(1)
-		# self.fortress = game.getPlayerByID(3)
+		self.fortress = game.getFortressByID(0)
 		self.clock.tick()
 		# Mark root node and adjacency sets
 		self.root = self.getState()
