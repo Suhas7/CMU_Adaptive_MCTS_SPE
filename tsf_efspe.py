@@ -3,6 +3,7 @@ import random
 from math import sqrt
 from math import log as ln
 from time import time
+from multiprocessing import Pool
 # Needs alternating expansion, policy calls.
 
 MCRTrials = 20
@@ -52,6 +53,17 @@ for i in range(0,2):
 builder = tsf.JsonGameBuilder("configs/sf_config_tick_clock.json")
 tempGame = builder.build()
 
+def expNode(coord,state,tree,frontier):
+    i,j,k = coord
+    tempGame.setState(state)
+    human.command(player_actions[i])
+    agent.command(player_actions[j])
+    fortress.command(fortress_actions[k])
+    [clock.tick() for _ in range(FRAME_CHUNK_SIZE)]
+    newNode=StateNode(tempGame.getState(),tree,parent=None)
+    newNode.MCRollout()
+    return (coord, newNode)
+
 class StateNode():
     def __init__(self,state,tree,parent=None,clock=None):
         self.tree=tree
@@ -86,18 +98,18 @@ class StateNode():
         agent = tempGame.getPlayerByID(1)
         fortress = tempGame.getFortressByID(0)
         # @Dana, how can I call the policy here
+        coordinates = list()
         for i in range(len(player_actions)):
             for j in range(len(player_actions)):
                 for k in range(len(fortress_actions)):
-                    tempGame.setState(self.state)
-                    human.command(player_actions[i])
-                    agent.command(player_actions[j])
-                    fortress.command(fortress_actions[k])
-                    [clock.tick() for _ in range(FRAME_CHUNK_SIZE)]
-                    newNode=StateNode(tempGame.getState(),self.tree,parent=self)
-                    newNode.MCRollout()
-                    self.children[(i,j,k)] = newNode
-                    frontier.add(newNode)
+                    coordinates.append(((i,j,k),self.state,self.tree,frontier))
+        with Pool(processes=4) as pool:
+            out = pool.starmap(expNode,coordinates)
+        for a,b in out:
+            self.children[a] = b
+            b.parent=self
+            frontier.add(b)
+
 
 class GameTree():
     def __init__(self):
@@ -151,6 +163,7 @@ if __name__=="__main__":
         gt.selectAndExpand()
         z+=time()
         print("    Expansion {}: {}".format(i,z))
+    
     #Move forward a frame
     gt.processMove()
     #Print leaf values
