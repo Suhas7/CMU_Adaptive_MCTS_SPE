@@ -1,6 +1,8 @@
 import pyTSF as tsf
 import random
 
+# Needs alternating expansion, policy calls.
+
 MCRTrials = 20
 MCRActs = 100
 
@@ -106,6 +108,15 @@ class GameTree():
 		return StateNode(self.game.getState(),self,None)
 	def processMove(moves):
 		self.root=self.root.children[moves]
+		newFront=set()
+		for fn in frontier:
+			n = fn
+			while n!=None:
+				if n==self.root:
+					newFront.add(fn)
+				n=n.parent
+		del self.frontier
+		self.frontier=newFront
 	def selectAndExpand(self):
 		def UCBEq(node):
 			w=node.value
