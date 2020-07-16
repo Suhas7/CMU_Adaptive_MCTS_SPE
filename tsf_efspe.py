@@ -119,7 +119,7 @@ class GameTree():
         self.game.setState(newState.state)
     def getState(self):
         return StateNode(self.game.getState(),self)
-    def processMove(moves=None):
+    def processMove(self,moves=None):
         if moves==None:
             currNode=max(self.frontier, key=lambda x: x.value)
             while currNode.parent!=self.root: currNode=currNode.parent
@@ -144,7 +144,7 @@ class GameTree():
 
 if __name__=="__main__":
     gt=GameTree()
-    for _ in range(10):
+    for _ in range(5):
         z=-time()
         gt.selectAndExpand()
         z+=time()
