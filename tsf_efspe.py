@@ -142,6 +142,7 @@ class GameTree():
             return w/(s+1)+UCBCParam*sqrt(ln(node.parent.trials)/s)
         max(self.frontier,key=UCBEq).expand(self.frontier)
 
+
 if __name__=="__main__":
     gt=GameTree()
     print("Running 5 expansions")
@@ -149,7 +150,7 @@ if __name__=="__main__":
         z=-time()
         gt.selectAndExpand()
         z+=time()
-        print("    Expansion {}: {}".format(i,z)
+        print("    Expansion {}: {}".format(i,z))
     #Move forward a frame
     gt.processMove()
     #Print leaf values
