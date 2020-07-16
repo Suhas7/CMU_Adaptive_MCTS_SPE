@@ -54,6 +54,7 @@ builder = tsf.JsonGameBuilder("configs/sf_config_tick_clock.json")
 tempGame = builder.build()
 
 def expNode(coord,state,tree,frontier):
+    import pyTSF as tsf
     i,j,k = coord
     tempGame.setState(state)
     human.command(player_actions[i])
