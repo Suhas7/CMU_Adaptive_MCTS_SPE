@@ -1,6 +1,8 @@
 import pyTSF as tsf
 import random
-
+from math import sqrt
+from math import log as ln
+from time import time
 # Needs alternating expansion, policy calls.
 
 MCRTrials = 20
@@ -135,3 +137,9 @@ class GameTree():
             return w/(s+1)+UCBCParam*sqrt(ln(node.parent.trials)/s)
         max(self.frontier,key=UCBEq).expand(self.frontier)
 
+gt=GameTree()
+for _ in range(10):
+    z=-time()
+    gt.selectAndExpand()
+    z+=time()
+    print(z)
