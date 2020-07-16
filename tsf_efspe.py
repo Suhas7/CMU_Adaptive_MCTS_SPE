@@ -144,8 +144,13 @@ class GameTree():
 
 if __name__=="__main__":
     gt=GameTree()
-    for _ in range(5):
+    print("Running 5 expansions")
+    for i in range(5):
         z=-time()
         gt.selectAndExpand()
         z+=time()
-        print(z)
+        print("    Expansion {}: {}".format(i,z)
+    #Move forward a frame
+    gt.processMove()
+    #Print leaf values
+    for n in gt.frontier: print(n.value/n.trials)
