@@ -36,22 +36,23 @@ comm4.thrust=thrust[0]
 comm4.fire=fire[1]
 
 
-player_actions = set([comm0,comm1,comm2,comm3,comm4])
+player_actions = [comm0,comm1,comm2,comm3,comm4]
 
 # Library of fortress commands
-fortress_actions = set()
+fortress_actions = list()
 for i in range(0,2):
     for j in range(0,2):
         fcomm = tsf.FortressCommand()
         fcomm.targetID=i
         fcomm.fireProb=j
-        fortress_actions.add(fcomm)
+        fortress_actions.append(fcomm)
 
 builder = tsf.JsonGameBuilder("configs/sf_config_tick_clock.json")
 tempGame = builder.build()
 
 class StateNode():
-    def __init__(self,state,parent=None,clock=None):
+    def __init__(self,state,tree,parent=None,clock=None):
+        self.tree=tree
         self.parent = parent
         self.state = state
         self.children=dict()
@@ -67,7 +68,7 @@ class StateNode():
             for _ in range(MCRActs):
                 p0.command(random.choice(player_actions))
                 p1.command(random.choice(player_actions))
-                clock.tick()
+                tempGame.gameClock.tick()
                 self.value += tempGame.getState().score
         self.trials+=MCRTrials
         node = self
@@ -81,7 +82,7 @@ class StateNode():
         clock = tempGame.gameClock
         human = tempGame.getPlayerByID(0)
         agent = tempGame.getPlayerByID(1)
-        fortress = game.getFortressByID(0)
+        fortress = tempGame.getFortressByID(0)
         # @Dana, how can I call the policy here
         for i in range(len(player_actions)):
             for j in range(len(player_actions)):
@@ -91,7 +92,7 @@ class StateNode():
                     agent.command(player_actions[j])
                     fortress.command(fortress_actions[k])
                     [clock.tick() for _ in range(FRAME_CHUNK_SIZE)]
-                    newNode=StateNode(tempGame.getState(),parent=self.state)
+                    newNode=StateNode(tempGame.getState(),self.tree,parent=self)
                     newNode.MCRollout()
                     self.children[(i,j,k)] = newNode
                     frontier.add(newNode)
@@ -100,10 +101,10 @@ class GameTree():
     def __init__(self):
         self.builder = tsf.JsonGameBuilder("configs/sf_config_tick_clock.json")
         self.game = builder.build()
-        self.clock = game.gameClock
-        self.human = game.getPlayerByID(0)
-        self.agent = game.getPlayerByID(1)
-        self.fortress = game.getFortressByID(0)
+        self.clock = self.game.gameClock
+        self.human = self.game.getPlayerByID(0)
+        self.agent = self.game.getPlayerByID(1)
+        self.fortress = self.game.getFortressByID(0)
         self.clock.tick()
         # Mark root node and adjacency sets
         self.root = self.getState()
@@ -115,7 +116,7 @@ class GameTree():
     def walkback(self,newState):
         self.game.setState(newState.state)
     def getState(self):
-        return StateNode(self.game.getState(),self,None)
+        return StateNode(self.game.getState(),self)
     def processMove(moves):
         self.root=self.root.children[moves]
         newFront=set()
