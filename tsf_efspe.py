@@ -119,8 +119,13 @@ class GameTree():
         self.game.setState(newState.state)
     def getState(self):
         return StateNode(self.game.getState(),self)
-    def processMove(moves):
-        self.root=self.root.children[moves]
+    def processMove(moves=None):
+        if moves==None:
+            currNode=max(self.frontier, key=lambda x: x.value)
+            while currNode.parent!=self.root: currNode=currNode.parent
+            self.root=currNode
+        else:
+            self.root=self.root.children[moves]
         newFront=set()
         for fn in frontier:
             n = fn
@@ -137,9 +142,10 @@ class GameTree():
             return w/(s+1)+UCBCParam*sqrt(ln(node.parent.trials)/s)
         max(self.frontier,key=UCBEq).expand(self.frontier)
 
-gt=GameTree()
-for _ in range(10):
-    z=-time()
-    gt.selectAndExpand()
-    z+=time()
-    print(z)
+if __name__=="__main__":
+    gt=GameTree()
+    for _ in range(10):
+        z=-time()
+        gt.selectAndExpand()
+        z+=time()
+        print(z)
