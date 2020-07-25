@@ -64,14 +64,19 @@ class StateNode():
         rootState=self.state
         p0 = tempGame.getPlayerByID(0)
         p1 = tempGame.getPlayerByID(1)
+        fortress = tempGame.getFortressByID(0)
         self.value = 0
+        ts=time()
         for _ in range(MCRTrials):
             tempGame.setState(rootState)
             for _ in range(MCRActs):
                 p0.command(random.choice(player_actions))
                 p1.command(random.choice(player_actions))
+                fortress.command(random.choice(fortress_actions))
                 tempGame.gameClock.tick()
                 self.value += tempGame.getState().score
+        ts=time()-ts
+        print(ts)
         self.trials+=MCRTrials
         node = self
         while node.parent != None:
